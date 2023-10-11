@@ -4,11 +4,10 @@ import com.ayman.web.dtos.ClubDto;
 import com.ayman.web.services.ClubService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Controller
@@ -34,7 +33,11 @@ public class ClubController {
     }
 
     @PostMapping("/clubs/new")
-    public String saveClub(@ModelAttribute("club") ClubDto clubDto){
+    public String saveClub(@Valid @ModelAttribute("club") ClubDto clubDto,
+                           BindingResult bindingResult){
+        if (bindingResult.hasErrors()){
+            return "create-clubs";
+        }
         clubService.saveClub(clubDto);
         return "redirect:/clubs";
     }
@@ -47,9 +50,36 @@ public class ClubController {
     }
 
     @PostMapping("/clubs/{clubId}/edit")
-    public String updateClub(@PathVariable("clubId") Long clubId,@ModelAttribute ClubDto clubDto){
+    public String updateClub(@PathVariable("clubId") Long clubId,
+                             @Valid @ModelAttribute("club") ClubDto clubDto,
+                             Model model,
+                             BindingResult bindingResult){
+        if (bindingResult.hasErrors()){
+            model.addAttribute("club",clubDto);
+            return "edit-clubs";
+        }
         clubDto.setId(clubId);
         clubService.updateClub(clubDto);
         return "redirect:/clubs";
+    }
+
+    @GetMapping("/clubs/{clubId}")
+    public String detailClub(@PathVariable("clubId") Long clubId, Model model){
+        ClubDto clubDto = clubService.findClubById(clubId);
+        model.addAttribute("club", clubDto);
+        return "detail-club";
+    }
+
+    @GetMapping("/clubs/{clubId}/delete")
+    public String deleteClub(@PathVariable("clubId") Long clubId){
+        clubService.delete(clubId);
+        return "redirect:/clubs";
+    }
+
+    @GetMapping("/clubs/search")
+    public String searchClubs(@RequestParam(value = "query") String query, Model model){
+        List<ClubDto> clubs = clubService.searchClubs(query);
+        model.addAttribute("clubs",clubs);
+        return "list-clubs";
     }
 }
